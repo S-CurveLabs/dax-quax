@@ -15,10 +15,10 @@ jobs:
       # hides whether the problem is the code or that one interpreter.
       fail-fast: false
       matrix:
-        # Every version pyproject.toml's requires-python claims. ">=3.12" is a promise to
+        # Every version pyproject.toml's requires-python claims. ">=3.11" is a promise to
         # anyone installing this, and a promise no job exercises is a guess. Widening
         # requires-python means adding the version here in the same commit.
-        python: ["3.12", "3.13", "3.14"]
+        python: ["3.11", "3.12", "3.13", "3.14"]
     name: test (py${{ matrix.python }})
     steps:
       - uses: actions/checkout@v7
@@ -28,7 +28,7 @@ jobs:
       - run: pip install -e ".[dev,file,report,serve,mcp]"
       # One version is enough for lint: ruff reads the target-version from pyproject.
       - run: ruff check .
-        if: matrix.python == '3.12'
+        if: matrix.python == '3.11'
       - run: pytest -q
 
   imports-without-extras:
@@ -41,6 +41,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
-          python-version: "3.12"
+          # The oldest supported version: a newer stdlib can hide a missing backport.
+          python-version: "3.11"
       - run: pip install -e .
       - run: python tools/check_imports.py

@@ -4,17 +4,18 @@ build-backend = "hatchling.build"
 
 [project]
 name = "dax-quax"
-version = "0.1.0"
+version = "0.1.1"
 description = "What does every object in this tabular model cost, what depends on it, and can it be deleted?"
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
-requires-python = ">=3.12"
+requires-python = ">=3.11"
 authors = [{ name = "S-Curve Labs" }]
 keywords = ["power-bi", "tabular", "vertipaq", "dax", "tmdl", "pbip", "mcp"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
@@ -72,7 +73,7 @@ exclude = [
 line-length = 100
 # spikes/ are frozen reproduction scripts for a finding, not maintained source.
 extend-exclude = ["spikes"]
-target-version = "py312"
+target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
