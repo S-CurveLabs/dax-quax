@@ -20,6 +20,7 @@
     {% if served %}
     <span class="meta" id="loadstate">read {{ loaded_at }}</span>
     <button id="rescan" type="button" class="chip" aria-live="polite">Rescan</button>
+    {% if switchable %}<a class="chip switch" href="/open">Change source</a>{% endif %}
     {% endif %}
   </div>
 </header>

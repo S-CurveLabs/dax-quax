@@ -406,47 +406,46 @@ def _describe(args: argparse.Namespace) -> str:
 
 
 def _cmd_serve(args: argparse.Namespace) -> int:
-    from dax_quax.render.serve import serve
+    """Serve a source, or with none given, a page to pick one on.
 
+    With no source flags this used to connect to Power BI Desktop. It opens the picker
+    instead, where a running Desktop is one of the choices: a new user runs the bare
+    command first, and a page that says what it can read beats a discovery error.
+    """
+    from dax_quax.render.serve import serve_switchboard
+
+    initial = None
     if args.workspace:
-        return _serve_workspace(args)
+        from dax_quax.sources.workspace import discover_workspace
 
-    # A loader, not a model: the source changes while you edit it, and that is the whole
-    # point of the rescan button.
-    serve(
-        lambda: _load(args),
-        description=_describe(args),
-        thresholds=_thresholds(args),
-        editor=args.editor,
-        host=args.host,
-        port=args.http_port,
-        open_browser=not args.no_browser,
-    )
-    return 0
-
-
-def _serve_workspace(args: argparse.Namespace) -> int:
-    """Serve a whole directory: the index, plus a page per model under /model/<slug>/."""
-    from dax_quax.render.serve import serve_workspace
-    from dax_quax.sources.workspace import discover_workspace
-
-    if args.report_folder:
-        # A workspace finds its own reports by walking the directory. Adding one by hand
-        # would be counted for one model and invisible to the rest, which is exactly the
-        # partial coverage the workspace scan exists to remove.
-        raise DaxQuaxError(
-            "--report-folder does not apply to a workspace: every report under the "
-            "directory is already matched to its model. Put the report in the directory."
+        if args.report_folder:
+            # A workspace finds its own reports by walking the directory. Adding one by
+            # hand would be counted for one model and invisible to the rest, which is
+            # exactly the partial coverage the workspace scan exists to remove.
+            raise DaxQuaxError(
+                "--report-folder does not apply to a workspace: every report under the "
+                "directory is already matched to its model. Put the report in the directory."
+            )
+        initial = (
+            "workspace",
+            lambda: discover_workspace(args.workspace),
+            f"workspace {args.workspace}",
         )
+    elif args.pbip or args.pbix or args.rowsets or args.port:
+        # A loader, not a model: the source changes while you edit it, and that is the
+        # whole point of the rescan button.
+        initial = ("model", lambda: _load(args), _describe(args))
+    elif args.report_folder:
+        raise DaxQuaxError("--report-folder needs a model: add --pbip, --pbix or --port")
 
-    serve_workspace(
-        lambda: discover_workspace(args.workspace),
-        description=f"workspace {args.workspace}",
+    serve_switchboard(
+        initial,
         thresholds=_thresholds(args),
         editor=args.editor,
         host=args.host,
         port=args.http_port,
         open_browser=not args.no_browser,
+        start=str(pathlib.Path.cwd()),
     )
     return 0
 

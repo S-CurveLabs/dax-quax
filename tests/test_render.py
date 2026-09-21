@@ -266,9 +266,13 @@ def test_cli_serve_routes_a_workspace_to_the_workspace_server(monkeypatch):
     import dax_quax.render.serve as serve_module
 
     seen = {}
-    monkeypatch.setattr(serve_module, "serve_workspace", lambda loader, **kw: seen.update(kw))
+    monkeypatch.setattr(
+        serve_module, "serve_switchboard", lambda initial, **kw: seen.update(kw, initial=initial)
+    )
     assert main(["serve", "--workspace", FIXTURE_WS, "--no-browser"]) == 0
-    assert seen["description"].startswith("workspace ")
+    shape, _loader, description = seen["initial"]
+    assert shape == "workspace"
+    assert description.startswith("workspace ")
     assert seen["open_browser"] is False
 
 

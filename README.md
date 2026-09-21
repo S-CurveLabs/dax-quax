@@ -67,6 +67,7 @@ dax-quax scan --workspace path/to/folder       # every model, against every repo
 
 dax-quax report --pbip DIR --out report.html   # one self-contained file, no network
 dax-quax serve  --pbip DIR                     # the same, plus lineage and a rescan
+dax-quax serve                                 # pick a folder or file in the browser
 dax-quax bench  "EVALUATE ..." --cold          # storage-engine vs formula-engine timings
 dax-quax mcp    --pbip DIR                     # answer questions about the model, read-only
 ```

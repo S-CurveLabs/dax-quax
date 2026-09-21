@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ title }}</title>
+{% include "_styles.html.j2" %}
+<style>
+  .pick { display: grid; grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr); gap: 16px; margin-top: 22px; }
+  @media (max-width: 900px) { .pick { grid-template-columns: 1fr; } }
+  .card { background: var(--raised); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; }
+  .card h2 { font-size: 11px; font-weight: 600; letter-spacing: 0.9px; color: var(--faint); margin-bottom: 10px; }
+  .card p { font-size: 12.5px; line-height: 1.6; color: #b4bcc8; margin: 0 0 10px; }
+  .pathbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+  .pathbar input, .card input { height: 36px; padding: 0 10px; background: var(--bg); border: 1px solid #2d333e;
+    border-radius: 6px; color: var(--text); font-family: var(--mono); font-size: 12.5px; }
+  .pathbar input { flex: 1; min-width: 240px; }
+  .chip { height: 36px; }
+  .chip.go { color: var(--teal); border-color: var(--teal-line); background: var(--teal-bg); }
+  .chip:disabled { opacity: 0.45; cursor: not-allowed; }
+  .roots { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .roots button { height: 28px; padding: 0 10px; background: var(--bg); border: 1px solid #2d333e; border-radius: 6px;
+    color: var(--dim); font-family: var(--mono); font-size: 11.5px; cursor: pointer; }
+  .list { border: 1px solid var(--line-soft); border-radius: 6px; max-height: 58vh; overflow-y: auto; }
+  .row { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-bottom: 1px solid var(--line-soft);
+    font-size: 13px; }
+  .row:last-child { border-bottom: 0; }
+  .row .name { font-family: var(--mono); font-size: 12.5px; overflow-wrap: anywhere; }
+  .row a.name { color: var(--text); text-decoration: none; cursor: pointer; }
+  .row a.name:hover { color: var(--teal); }
+  .row .tag { font-size: 10px; font-weight: 600; letter-spacing: 0.6px; color: var(--faint); min-width: 58px; }
+  .row.model .tag, .row.pbip .tag, .row.file .tag { color: var(--teal); }
+  .row.report .tag { color: var(--violet); }
+  .row .act { margin-left: auto; }
+  .row .act button { height: 28px; padding: 0 10px; font-size: 11.5px; }
+  .row .hint { margin-left: auto; font-size: 11.5px; color: var(--faint); }
+  .empty { padding: 14px; color: var(--faint); font-size: 12.5px; }
+  .status { margin-top: 12px; font-size: 12.5px; min-height: 1.4em; }
+  .status.err { color: #e59a8c; }
+  .status.busy { color: var(--amber); }
+  .folderact { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 10px 0 0; }
+  .folderact .why { font-size: 11.5px; color: var(--faint); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="inner">
+    <h1>dax&#8209;quax</h1>
+    <div class="meta">choose what to scan</div>
+    {% if current %}
+    <a class="meta" href="/" style="margin-left:auto">&larr; back to {{ current }}</a>
+    {% endif %}
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="pick">
+    <section class="card" aria-labelledby="browse-h">
+      <h2 id="browse-h">A FOLDER OR FILE ON THIS MACHINE</h2>
+      <p>Pick the <strong>folder that holds your models and all their reports</strong>. Every model in it
+        is checked against every report in it, which is what makes a REMOVE verdict safe to act on.
+        Or pick a single <code>.pbip</code> project, or a <code>.pbix</code>, <code>.abf</code> or
+        PowerPivot <code>.xlsx</code> file.</p>
+      <div class="roots" id="roots">
+        {% for root in roots %}<button type="button" data-path="{{ root }}">{{ root }}</button>{% endfor %}
+      </div>
+      <form class="pathbar" id="pathform">
+        <button type="button" class="chip" id="up" title="Parent folder" aria-label="Parent folder">&uarr;</button>
+        <input id="path" type="text" value="{{ start }}" aria-label="Folder or file path" spellcheck="false">
+        <button type="submit" class="chip">Go</button>
+      </form>
+      <div class="list" id="list" aria-live="polite"><div class="empty">Loading…</div></div>
+      <div class="folderact">
+        <button type="button" class="chip go" id="scanfolder">Scan this folder</button>
+        <span class="why" id="folderwhy"></span>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="live-h">
+      <h2 id="live-h">POWER BI DESKTOP, RUNNING</h2>
+      <p>Read the model open in Power BI Desktop on this machine, sizes included. Windows only; the
+        first time, dax-quax may need to download Microsoft's ADOMD.NET client
+        (<code>dax-quax install-runtime</code>).</p>
+      <p>A live model has no report layer, so unused objects come back UNKNOWN rather than REMOVE.</p>
+      <form id="liveform" class="pathbar">
+        <input id="port" type="number" min="1" max="65535" placeholder="port (optional)" aria-label="Port">
+        <button type="submit" class="chip go">Connect</button>
+      </form>
+    </section>
+  </div>
+  <div class="status" id="status" role="status"></div>
+</div>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const pathInput = $("path"), list = $("list"), status = $("status");
+  let current = null;
+
+  const TAGS = { dir: "FOLDER", model: "MODEL", report: "REPORT", pbip: "PROJECT", file: "FILE" };
+
+  function say(text, kind) {
+    status.textContent = text || "";
+    status.className = "status" + (kind ? " " + kind : "");
+  }
+
+  function busy(on) {
+    document.querySelectorAll("button").forEach(b => { b.disabled = on; });
+  }
+
+  // Names come off the disk, so every one goes in as text, never as markup.
+  function row(entry, listing) {
+    const div = document.createElement("div");
+    div.className = "row " + entry.kind;
+    const tag = document.createElement("span");
+    tag.className = "tag";
+    tag.textContent = TAGS[entry.kind] || "";
+    div.appendChild(tag);
+
+    const folderish = entry.kind === "dir" || entry.kind === "model" || entry.kind === "report";
+    const name = document.createElement(folderish ? "a" : "span");
+    name.className = "name";
+    name.textContent = entry.name;
+    if (folderish) {
+      name.href = "#";
+      name.addEventListener("click", e => { e.preventDefault(); browse(entry.path); });
+    }
+    div.appendChild(name);
+
+    let action = null, hint = null;
+    if (entry.kind === "file") action = ["Scan file", "file"];
+    if (entry.kind === "model" || entry.kind === "pbip") {
+      // Beside a second model, a project scan would count the other model's reports as
+      // this one's. The folder scan matches each report to its own model instead.
+      if (listing.models_here > 1) hint = "several models here — scan the folder";
+      else action = ["Scan project", "project"];
+    }
+    if (action) {
+      const wrap = document.createElement("span");
+      wrap.className = "act";
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "chip go";
+      b.textContent = action[0];
+      b.addEventListener("click", () => open({ kind: action[1], path: entry.path }));
+      wrap.appendChild(b);
+      div.appendChild(wrap);
+    } else if (hint) {
+      const h = document.createElement("span");
+      h.className = "hint";
+      h.textContent = hint;
+      div.appendChild(h);
+    }
+    return div;
+  }
+
+  function browse(path) {
+    say("");
+    fetch("/api/browse?path=" + encodeURIComponent(path))
+      .then(r => r.json().then(body => ({ ok: r.ok, body })))
+      .then(({ ok, body }) => {
+        if (!ok) { say(body.error || "could not read that folder", "err"); return; }
+        current = body;
+        pathInput.value = body.path;
+        list.replaceChildren();
+        if (!body.entries.length) {
+          const e = document.createElement("div");
+          e.className = "empty";
+          e.textContent = "No folders, projects or model files here.";
+          list.appendChild(e);
+        }
+        body.entries.forEach(entry => list.appendChild(row(entry, body)));
+        if (body.truncated) {
+          const e = document.createElement("div");
+          e.className = "empty";
+          e.textContent = "Only the first entries are shown. Type a path to go straight there.";
+          list.appendChild(e);
+        }
+        $("up").disabled = !body.parent;
+        $("scanfolder").disabled = !body.scannable;
+        $("folderwhy").textContent = !body.scannable
+          ? "Too broad to scan: this would walk every folder under it."
+          : body.models_here
+            ? `${body.models_here} model${body.models_here > 1 ? "s" : ""} directly in this folder, plus any in subfolders.`
+            : "Scans every model and report in this folder and its subfolders.";
+      })
+      .catch(() => say("could not reach the dax-quax server — is it still running?", "err"));
+  }
+
+  function open(choice) {
+    busy(true);
+    say("Reading… a large folder can take a while.", "busy");
+    fetch("/api/open", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(choice),
+    })
+      .then(r => r.ok ? (location.href = "/") : r.json().then(b => Promise.reject(b.error)))
+      .catch(err => {
+        busy(false);
+        $("up").disabled = !(current && current.parent);
+        $("scanfolder").disabled = !(current && current.scannable);
+        say(typeof err === "string" ? err : "could not open that source", "err");
+      });
+  }
+
+  $("pathform").addEventListener("submit", e => {
+    e.preventDefault();
+    const value = pathInput.value.trim();
+    // A pasted file path scans the file; anything else is a folder to open.
+    if (/\.(pbix|abf|xlsx)$/i.test(value)) open({ kind: "file", path: value });
+    else if (/\.pbip$/i.test(value)) open({ kind: "project", path: value });
+    else browse(value);
+  });
+  $("up").addEventListener("click", () => { if (current && current.parent) browse(current.parent); });
+  $("scanfolder").addEventListener("click", () => { if (current) open({ kind: "workspace", path: current.path }); });
+  $("roots").addEventListener("click", e => { if (e.target.dataset.path) browse(e.target.dataset.path); });
+  $("liveform").addEventListener("submit", e => {
+    e.preventDefault();
+    const port = parseInt($("port").value, 10);
+    open({ kind: "live", port: Number.isFinite(port) ? port : null });
+  });
+
+  browse(pathInput.value);
+})();
+</script>
+</body>
+</html>

@@ -44,6 +44,7 @@
     border-radius: 6px; color: var(--dim); font-family: var(--mono); font-size: 12px; font-weight: 600;
     letter-spacing: 0.4px; cursor: pointer; }
   .chip[aria-pressed="true"] { color: var(--text); border-color: #4a5566; }
+  a.chip { display: inline-flex; align-items: center; text-decoration: none; }
   .chip[data-verdict="REMOVE"][aria-pressed="true"] { color: var(--teal); background: var(--teal-bg); border-color: var(--teal-line); }
   .chip[data-verdict="REVIEW"][aria-pressed="true"] { color: var(--amber); background: var(--amber-bg); border-color: var(--amber-line); }
   .chip[data-verdict="UNKNOWN"][aria-pressed="true"] { color: var(--violet); background: var(--violet-bg); border-color: #45405c; }

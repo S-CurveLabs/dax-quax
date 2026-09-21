@@ -20,6 +20,10 @@ Moving a page off the root is what made `api_base` necessary. The page used to f
 relative ``api/lineage``, which resolves under whatever path it is served at — correct at
 the root and wrong everywhere else. It is now told where its API is.
 
+`Switchboard` sits in front of both. It holds whichever app is showing the current source and
+answers the picker's own routes itself, so a bare `serve` can choose what to scan from the page
+(`render/picker.py`) without either app knowing it can be swapped out.
+
 WHY A LOOPBACK SERVER STILL NEEDS TWO CHECKS
 --------------------------------------------
 Binding to 127.0.0.1 keeps the network out; it does not keep a web page out. A site the
@@ -33,16 +37,19 @@ routes also require that the browser did not call them from another site.
 from __future__ import annotations
 
 import datetime as _dt
+import pathlib
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Query, Request, Response
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from dax_quax.analysis.usage import Thresholds
+from dax_quax.errors import DaxQuaxError
 from dax_quax.model import Model
 from dax_quax.render.editor import DEFAULT_EDITOR
 from dax_quax.render.graph import render_lineage_svg
@@ -58,9 +65,12 @@ __all__ = [
     "LOCAL_HOSTS",
     "State",
     "WorkspaceState",
+    "Switchboard",
     "create_app",
+    "create_switchboard",
     "create_workspace_app",
     "serve",
+    "serve_switchboard",
     "serve_workspace",
 ]
 
@@ -98,6 +108,7 @@ class State:
     description: str = "source"
     thresholds: Thresholds | None = None
     editor: str = DEFAULT_EDITOR
+    switchable: bool = False
     model: Model | None = None
     lineage: Any = None
     loaded_at: _dt.datetime | None = None
@@ -128,6 +139,7 @@ class State:
         )
         context.update(
             served=True,
+            switchable=self.switchable,
             source_description=self.description,
             scans=self.scans,
             load_error=self.error,
@@ -155,9 +167,14 @@ def create_app(
     thresholds: Thresholds | None = None,
     editor: str = DEFAULT_EDITOR,
     host: str | None = None,
+    switchable: bool = False,
 ) -> FastAPI:
     state = State(
-        loader=loader, description=description, thresholds=thresholds, editor=editor
+        loader=loader,
+        description=description,
+        thresholds=thresholds,
+        editor=editor,
+        switchable=switchable,
     )
     templates = _templates()
 
@@ -236,6 +253,7 @@ class WorkspaceState:
     description: str = "workspace"
     thresholds: Thresholds | None = None
     editor: str = DEFAULT_EDITOR
+    switchable: bool = False
     workspace: Any = None
     slugs: dict[str, str] = field(default_factory=dict)
     by_slug: dict[str, str] = field(default_factory=dict)
@@ -285,6 +303,7 @@ class WorkspaceState:
         )
         context.update(
             served=True,
+            switchable=self.switchable,
             scans=self.scans,
             load_error=self.error,
             loaded_at=self._stamp(),
@@ -307,6 +326,7 @@ class WorkspaceState:
         )
         context.update(
             served=True,
+            switchable=self.switchable,
             # This page is not at the root, so a relative "api/" would resolve under it.
             api_base=f"/model/{slug}/api/",
             source_description=self.description,
@@ -327,10 +347,15 @@ def create_workspace_app(
     thresholds: Thresholds | None = None,
     editor: str = DEFAULT_EDITOR,
     host: str | None = None,
+    switchable: bool = False,
 ) -> FastAPI:
     """The same two templates `report --workspace` writes, served instead of saved."""
     state = WorkspaceState(
-        loader=loader, description=description, thresholds=thresholds, editor=editor
+        loader=loader,
+        description=description,
+        thresholds=thresholds,
+        editor=editor,
+        switchable=switchable,
     )
     templates = _templates()
     app = FastAPI(title="dax-quax workspace", docs_url=None, redoc_url=None)
@@ -405,3 +430,199 @@ def serve_workspace(
 
         threading.Timer(0.6, lambda: webbrowser.open(url)).start()
     uvicorn.run(app, host=host, port=port, log_level="warning")
+
+
+# -- choosing the source from the page -------------------------------------------------
+
+
+class OpenRequest(BaseModel):
+    """What the picker page posts. Module scope, for the same reason as the imports."""
+
+    kind: str
+    path: str | None = None
+    port: int | None = None
+
+
+#: Paths the switchboard answers itself. Everything else goes to whichever app is showing
+#: the current source, so the model and workspace apps above stay exactly as they were.
+_PICKER_PATHS = frozenset({"/open", "/api/browse", "/api/open"})
+
+
+class Switchboard:
+    """Serve one source at a time, and let the page pick the next one.
+
+    The two app shapes above differ in their routes, not just their data — a workspace
+    has an index and a page per model — so a new source is a new app rather than a new
+    loader. This holds whichever is current and routes to it, answering only the picker's
+    own paths itself. Nothing is swapped until the new source has loaded: a pick that
+    fails leaves the page you had.
+    """
+
+    def __init__(
+        self,
+        *,
+        thresholds: Thresholds | None = None,
+        editor: str = DEFAULT_EDITOR,
+        host: str | None = None,
+        start: str | None = None,
+    ) -> None:
+        self.thresholds = thresholds
+        self.editor = editor
+        self.host = host
+        self.start = start
+        self.current: Any = None
+        self.description: str | None = None
+        self.picker = self._picker_app()
+
+    def show(self, shape: str, loader: Callable[[], Any], description: str) -> Any:
+        """Build the app for a source. Returned rather than installed, so it can be vetted."""
+        factory = create_workspace_app if shape == "workspace" else create_app
+        return factory(
+            loader,
+            description=description,
+            thresholds=self.thresholds,
+            editor=self.editor,
+            host=self.host,
+            switchable=True,
+        )
+
+    def install(self, app: Any, description: str) -> None:
+        self.current = app
+        self.description = description
+
+    async def __call__(self, scope: Any, receive: Any, send: Any) -> None:
+        routed_to_source = (
+            scope["type"] == "http"
+            and self.current is not None
+            and scope["path"] not in _PICKER_PATHS
+        )
+        await (self.current if routed_to_source else self.picker)(scope, receive, send)
+
+    def _picker_app(self) -> FastAPI:
+        from dax_quax.render import picker
+
+        templates = _templates()
+        app = FastAPI(title="dax-quax", docs_url=None, redoc_url=None)
+        _guard(app, self.host)
+        board = self
+
+        @app.get("/")
+        def root() -> Response:
+            # Only reached when nothing is loaded yet; otherwise the current app has "/".
+            return RedirectResponse("/open", status_code=303)
+
+        @app.get("/open", response_class=HTMLResponse)
+        def open_page(request: Request) -> Any:
+            return templates.TemplateResponse(
+                request,
+                "open.html.j2",
+                {
+                    "title": "dax-quax — choose what to scan",
+                    "current": board.description,
+                    "start": board.start or str(pathlib.Path.home()),
+                    "roots": picker.roots(),
+                },
+            )
+
+        @app.get("/api/browse")
+        def browse(path: str | None = None) -> Response:
+            try:
+                return JSONResponse(picker.listing(path or board.start or pathlib.Path.home()))
+            except DaxQuaxError as exc:
+                return JSONResponse({"error": str(exc)}, status_code=400)
+
+        @app.post("/api/open")
+        def open_source(choice: OpenRequest) -> Response:
+            # A plain def: FastAPI runs it on a worker thread, so a slow scan does not
+            # stall the page that is waiting on it.
+            try:
+                picked = picker.choose(choice.kind, choice.path, choice.port)
+            except DaxQuaxError as exc:
+                return JSONResponse({"error": str(exc)}, status_code=400)
+            candidate = board.show(picked.shape, picked.loader, picked.description)
+            state = candidate.state.dax_quax
+            state.rescan()
+            if state.error is not None:
+                return JSONResponse({"error": state.error}, status_code=400)
+            if picked.shape == "workspace" and not state.workspace.models:
+                return JSONResponse(
+                    {"error": f"no semantic models found under {choice.path}"},
+                    status_code=400,
+                )
+            board.install(candidate, picked.description)
+            return Response(status_code=204)
+
+        return app
+
+
+def create_switchboard(
+    initial: tuple[str, Callable[[], Any], str] | None = None,
+    *,
+    thresholds: Thresholds | None = None,
+    editor: str = DEFAULT_EDITOR,
+    host: str | None = None,
+    start: str | None = None,
+) -> Switchboard:
+    """A switchboard, optionally already showing ``(shape, loader, description)``.
+
+    The initial source is not loaded here — the first page view loads it, as `serve`
+    always has, so a slow source does not hold up the server starting.
+    """
+    board = Switchboard(thresholds=thresholds, editor=editor, host=host, start=start)
+    if initial is not None:
+        shape, loader, description = initial
+        board.install(board.show(shape, loader, description), description)
+    return board
+
+
+def serve_switchboard(
+    initial: tuple[str, Callable[[], Any], str] | None = None,
+    *,
+    thresholds: Thresholds | None = None,
+    editor: str = DEFAULT_EDITOR,
+    host: str = "127.0.0.1",
+    port: int = 8777,
+    open_browser: bool = True,
+    start: str | None = None,
+) -> None:
+    """Run a switchboard, with the picker. Loopback only: the picker lists local folders.
+
+    Bound anywhere else, a source must be given and is served on its own with no picker —
+    a page that browses this machine's disk must never be reachable from another one.
+    """
+    import uvicorn
+
+    if host not in LOCAL_HOSTS:
+        if initial is None:
+            raise DaxQuaxError(
+                "the source picker lists folders on this machine, so it is only offered "
+                "on localhost. Pass --pbip, --pbix, --workspace or --port to serve on "
+                f"{host}."
+            )
+        shape, loader, description = initial
+        run = serve_workspace if shape == "workspace" else serve
+        run(
+            loader,
+            description=description,
+            thresholds=thresholds,
+            editor=editor,
+            host=host,
+            port=port,
+            open_browser=open_browser,
+        )
+        return
+    board = create_switchboard(
+        initial, thresholds=thresholds, editor=editor, host=host, start=start
+    )
+    url = f"http://{host}:{port}/"
+    if initial is None:
+        print(f"dax-quax: choose what to scan at {url}")
+    else:
+        print(f"dax-quax serving {initial[2]} at {url}")
+        print("  rescan re-reads it; 'change source' on the page picks something else")
+    if open_browser:
+        import threading
+        import webbrowser
+
+        threading.Timer(0.6, lambda: webbrowser.open(url)).start()
+    uvicorn.run(board, host=host, port=port, log_level="warning")
