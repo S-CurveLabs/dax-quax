@@ -1,0 +1,560 @@
+{
+  "_comment": "SYNTHETIC fixture. Hand-built to match the DMV shapes dmv.py claims to read. It exercises plumbing and arithmetic; it does NOT confirm that a real engine uses these column names or join keys. See UNVERIFIED_JOINS in sources/dmv.py and spikes/m0_adomd/FINDINGS.md.",
+  "tables": [
+    {
+      "ID": 1,
+      "Name": "Sales",
+      "IsHidden": false
+    },
+    {
+      "ID": 2,
+      "Name": "Product",
+      "IsHidden": false
+    },
+    {
+      "ID": 3,
+      "Name": "LocalDateTable_8f3c1e2a-0000-4000-9000-1234567890ab",
+      "IsHidden": true
+    },
+    {
+      "ID": 4,
+      "Name": "Customer",
+      "IsHidden": false
+    },
+    {
+      "ID": 5,
+      "Name": "Time Intelligence",
+      "IsHidden": false
+    }
+  ],
+  "columns": [
+    {
+      "ID": 10,
+      "TableID": 1,
+      "Type": 1,
+      "ExplicitName": "Order Number",
+      "ExplicitDataType": 2,
+      "IsHidden": false
+    },
+    {
+      "ID": 11,
+      "TableID": 1,
+      "Type": 1,
+      "ExplicitName": "Quantity",
+      "ExplicitDataType": 6,
+      "IsHidden": false
+    },
+    {
+      "ID": 12,
+      "TableID": 1,
+      "Type": 2,
+      "ExplicitName": "Line Amount",
+      "ExplicitDataType": 8,
+      "IsHidden": false,
+      "Expression": "Sales[Quantity] * RELATED ( Product[List Price] )"
+    },
+    {
+      "ID": 13,
+      "TableID": 1,
+      "Type": 3,
+      "InferredName": "RowNumber-2662979B-1795-4F74-8F37-6A1BA8059B61"
+    },
+    {
+      "ID": 14,
+      "TableID": 1,
+      "Type": 1,
+      "ExplicitName": "Product Key",
+      "ExplicitDataType": 6,
+      "IsHidden": true
+    },
+    {
+      "ID": 20,
+      "TableID": 2,
+      "Type": 1,
+      "ExplicitName": "Product Key",
+      "ExplicitDataType": 6,
+      "IsHidden": true
+    },
+    {
+      "ID": 21,
+      "TableID": 2,
+      "Type": 1,
+      "ExplicitName": "Product Name",
+      "ExplicitDataType": 2,
+      "IsHidden": false,
+      "SortByColumnID": 22,
+      "DisplayFolder": "Attributes"
+    },
+    {
+      "ID": 22,
+      "TableID": 2,
+      "Type": 1,
+      "ExplicitName": "Sort Order",
+      "ExplicitDataType": 6,
+      "IsHidden": true
+    },
+    {
+      "ID": 23,
+      "TableID": 2,
+      "Type": 1,
+      "ExplicitName": "List Price",
+      "ExplicitDataType": 10,
+      "IsHidden": false
+    },
+    {
+      "ID": 99,
+      "TableID": 404,
+      "Type": 1,
+      "ExplicitName": "Orphan",
+      "ExplicitDataType": 2
+    },
+    {
+      "ID": 30,
+      "TableID": 4,
+      "Type": 1,
+      "ExplicitName": "Customer Key",
+      "ExplicitDataType": 6,
+      "IsHidden": true
+    },
+    {
+      "ID": 31,
+      "TableID": 4,
+      "Type": 1,
+      "ExplicitName": "Region",
+      "ExplicitDataType": 2,
+      "IsHidden": false
+    },
+    {
+      "ID": 32,
+      "TableID": 4,
+      "Type": 1,
+      "ExplicitName": "Email",
+      "ExplicitDataType": 2,
+      "IsHidden": false
+    },
+    {
+      "ID": 24,
+      "TableID": 2,
+      "Type": 1,
+      "ExplicitName": "Category",
+      "ExplicitDataType": 2,
+      "IsHidden": false
+    },
+    {
+      "ID": 33,
+      "TableID": 5,
+      "Type": 1,
+      "ExplicitName": "Time Calculation",
+      "ExplicitDataType": 2,
+      "IsHidden": false
+    }
+  ],
+  "measures": [
+    {
+      "ID": 50,
+      "TableID": 1,
+      "Name": "Total Quantity",
+      "Expression": "SUM ( Sales[Quantity] )",
+      "IsHidden": false
+    },
+    {
+      "ID": 51,
+      "TableID": 1,
+      "Name": "Total Sales",
+      "Expression": "SUMX ( Sales, Sales[Line Amount] )",
+      "IsHidden": false,
+      "FormatString": "\\$#,0.00"
+    },
+    {
+      "ID": 52,
+      "TableID": 1,
+      "Name": "Margin % (old)",
+      "Expression": "DIVIDE ( [Total Sales], 1 )",
+      "IsHidden": true
+    }
+  ],
+  "relationships": [
+    {
+      "FromTableID": 1,
+      "FromColumnID": 14,
+      "ToTableID": 2,
+      "ToColumnID": 20,
+      "IsActive": true,
+      "CrossFilteringBehavior": "OneDirection"
+    },
+    {
+      "FromTableID": 1,
+      "FromColumnID": 777,
+      "ToTableID": 2,
+      "ToColumnID": 20,
+      "IsActive": false
+    }
+  ],
+  "partitions": [
+    {
+      "TableID": 1,
+      "Mode": "Import"
+    },
+    {
+      "TableID": 2,
+      "Mode": "Import"
+    },
+    {
+      "TableID": 4,
+      "Mode": "Import",
+      "Type": 1
+    },
+    {
+      "TableID": 5,
+      "Mode": "Import",
+      "Type": 4,
+      "QueryDefinition": "{ \"Current\" }"
+    }
+  ],
+  "storage_tables": [
+    {
+      "DIMENSION_NAME": "Sales",
+      "TABLE_ID": "Sales",
+      "ROWS_COUNT": 1000
+    },
+    {
+      "DIMENSION_NAME": "Product",
+      "TABLE_ID": "Product",
+      "ROWS_COUNT": 40
+    },
+    {
+      "DIMENSION_NAME": "Sales",
+      "TABLE_ID": "$Sales$Order Number",
+      "ROWS_COUNT": 1000
+    },
+    {
+      "DIMENSION_NAME": "Sales",
+      "TABLE_ID": "$Sales$Quantity",
+      "ROWS_COUNT": 12
+    },
+    {
+      "DIMENSION_NAME": "Sales",
+      "TABLE_ID": "$Sales$Line Amount",
+      "ROWS_COUNT": 640
+    },
+    {
+      "DIMENSION_NAME": "Sales",
+      "TABLE_ID": "$Sales$Product Key",
+      "ROWS_COUNT": 40
+    },
+    {
+      "DIMENSION_NAME": "Product",
+      "TABLE_ID": "$Product$Product Name",
+      "ROWS_COUNT": 40
+    },
+    {
+      "DIMENSION_NAME": "Product",
+      "TABLE_ID": "$Product$Sort Order",
+      "ROWS_COUNT": 40
+    },
+    {
+      "DIMENSION_NAME": "Product",
+      "TABLE_ID": "$Product$List Price",
+      "ROWS_COUNT": 31
+    },
+    {
+      "DIMENSION_NAME": "Customer",
+      "TABLE_ID": "$Customer$Customer Key",
+      "ROWS_COUNT": 40
+    },
+    {
+      "DIMENSION_NAME": "Customer",
+      "TABLE_ID": "$Customer$Region",
+      "ROWS_COUNT": 40
+    },
+    {
+      "DIMENSION_NAME": "Customer",
+      "TABLE_ID": "$Customer$Email",
+      "ROWS_COUNT": 40
+    },
+    {
+      "DIMENSION_NAME": "Product",
+      "TABLE_ID": "$Product$Category",
+      "ROWS_COUNT": 40
+    },
+    {
+      "DIMENSION_NAME": "Time Intelligence",
+      "TABLE_ID": "$Time Intelligence$Time Calculation",
+      "ROWS_COUNT": 40
+    }
+  ],
+  "storage_columns": [
+    {
+      "DIMENSION_NAME": "Sales",
+      "COLUMN_ID": "Order Number",
+      "DICTIONARY_SIZE": 5000,
+      "COLUMN_ENCODING": "HASH"
+    },
+    {
+      "DIMENSION_NAME": "Sales",
+      "COLUMN_ID": "Quantity",
+      "DICTIONARY_SIZE": 200,
+      "COLUMN_ENCODING": "VALUE"
+    },
+    {
+      "DIMENSION_NAME": "Sales",
+      "COLUMN_ID": "Line Amount",
+      "DICTIONARY_SIZE": 300,
+      "COLUMN_ENCODING": "HASH"
+    },
+    {
+      "DIMENSION_NAME": "Sales",
+      "COLUMN_ID": "Product Key",
+      "DICTIONARY_SIZE": 150,
+      "COLUMN_ENCODING": "VALUE"
+    },
+    {
+      "DIMENSION_NAME": "Sales",
+      "COLUMN_ID": "RowNumber-2662979B-1795-4F74-8F37-6A1BA8059B61",
+      "DICTIONARY_SIZE": 0,
+      "COLUMN_ENCODING": "VALUE"
+    },
+    {
+      "DIMENSION_NAME": "Product",
+      "COLUMN_ID": "Product Name",
+      "DICTIONARY_SIZE": 80,
+      "COLUMN_ENCODING": "HASH"
+    },
+    {
+      "DIMENSION_NAME": "Product",
+      "COLUMN_ID": "Sort Order",
+      "DICTIONARY_SIZE": 40,
+      "COLUMN_ENCODING": "VALUE"
+    },
+    {
+      "DIMENSION_NAME": "Product",
+      "COLUMN_ID": "List Price",
+      "DICTIONARY_SIZE": 60,
+      "COLUMN_ENCODING": "VALUE"
+    },
+    {
+      "DIMENSION_NAME": "Customer",
+      "COLUMN_ID": "Customer Key",
+      "DICTIONARY_SIZE": 90,
+      "COLUMN_ENCODING": "HASH"
+    },
+    {
+      "DIMENSION_NAME": "Customer",
+      "COLUMN_ID": "Region",
+      "DICTIONARY_SIZE": 70,
+      "COLUMN_ENCODING": "HASH"
+    },
+    {
+      "DIMENSION_NAME": "Customer",
+      "COLUMN_ID": "Email",
+      "DICTIONARY_SIZE": 260,
+      "COLUMN_ENCODING": "HASH"
+    },
+    {
+      "DIMENSION_NAME": "Product",
+      "COLUMN_ID": "Category",
+      "DICTIONARY_SIZE": 45,
+      "COLUMN_ENCODING": "HASH"
+    },
+    {
+      "DIMENSION_NAME": "Time Intelligence",
+      "COLUMN_ID": "Time Calculation",
+      "DICTIONARY_SIZE": 20,
+      "COLUMN_ENCODING": "HASH"
+    }
+  ],
+  "segments": [
+    {
+      "DIMENSION_NAME": "Sales",
+      "TABLE_ID": "Sales",
+      "COLUMN_ID": "Order Number",
+      "SEGMENT_NUMBER": 0,
+      "USED_SIZE": 1200,
+      "RECORDS_COUNT": 600
+    },
+    {
+      "DIMENSION_NAME": "Sales",
+      "TABLE_ID": "Sales",
+      "COLUMN_ID": "Order Number",
+      "SEGMENT_NUMBER": 1,
+      "USED_SIZE": 800,
+      "RECORDS_COUNT": 400
+    },
+    {
+      "DIMENSION_NAME": "Sales",
+      "TABLE_ID": "Sales",
+      "COLUMN_ID": "Quantity",
+      "SEGMENT_NUMBER": 0,
+      "USED_SIZE": 100,
+      "RECORDS_COUNT": 1000
+    },
+    {
+      "DIMENSION_NAME": "Sales",
+      "TABLE_ID": "Sales",
+      "COLUMN_ID": "Line Amount",
+      "SEGMENT_NUMBER": 0,
+      "USED_SIZE": 120,
+      "RECORDS_COUNT": 1000
+    },
+    {
+      "DIMENSION_NAME": "Sales",
+      "TABLE_ID": "Sales",
+      "COLUMN_ID": "Product Key",
+      "SEGMENT_NUMBER": 0,
+      "USED_SIZE": 80,
+      "RECORDS_COUNT": 1000
+    },
+    {
+      "DIMENSION_NAME": "Sales",
+      "TABLE_ID": "Sales",
+      "COLUMN_ID": "RowNumber-2662979B-1795-4F74-8F37-6A1BA8059B61",
+      "SEGMENT_NUMBER": 0,
+      "USED_SIZE": 10,
+      "RECORDS_COUNT": 1000
+    },
+    {
+      "DIMENSION_NAME": "Sales",
+      "TABLE_ID": "H$Sales$Order Number",
+      "COLUMN_ID": "Order Number",
+      "SEGMENT_NUMBER": 0,
+      "USED_SIZE": 25,
+      "RECORDS_COUNT": 1000
+    },
+    {
+      "DIMENSION_NAME": "Product",
+      "TABLE_ID": "Product",
+      "COLUMN_ID": "Product Name",
+      "SEGMENT_NUMBER": 0,
+      "USED_SIZE": 50,
+      "RECORDS_COUNT": 40
+    },
+    {
+      "DIMENSION_NAME": "Product",
+      "TABLE_ID": "Product",
+      "COLUMN_ID": "Sort Order",
+      "SEGMENT_NUMBER": 0,
+      "USED_SIZE": 20,
+      "RECORDS_COUNT": 40
+    },
+    {
+      "DIMENSION_NAME": "Product",
+      "TABLE_ID": "Product",
+      "COLUMN_ID": "List Price",
+      "SEGMENT_NUMBER": 0,
+      "USED_SIZE": 30,
+      "RECORDS_COUNT": 40
+    },
+    {
+      "DIMENSION_NAME": "Customer",
+      "TABLE_ID": "Customer",
+      "COLUMN_ID": "Customer Key",
+      "SEGMENT_NUMBER": 0,
+      "USED_SIZE": 40,
+      "RECORDS_COUNT": 40
+    },
+    {
+      "DIMENSION_NAME": "Customer",
+      "TABLE_ID": "Customer",
+      "COLUMN_ID": "Region",
+      "SEGMENT_NUMBER": 0,
+      "USED_SIZE": 35,
+      "RECORDS_COUNT": 40
+    },
+    {
+      "DIMENSION_NAME": "Customer",
+      "TABLE_ID": "Customer",
+      "COLUMN_ID": "Email",
+      "SEGMENT_NUMBER": 0,
+      "USED_SIZE": 120,
+      "RECORDS_COUNT": 40
+    },
+    {
+      "DIMENSION_NAME": "Product",
+      "TABLE_ID": "Product",
+      "COLUMN_ID": "Category",
+      "SEGMENT_NUMBER": 0,
+      "USED_SIZE": 25,
+      "RECORDS_COUNT": 40
+    },
+    {
+      "DIMENSION_NAME": "Time Intelligence",
+      "TABLE_ID": "Time Intelligence",
+      "COLUMN_ID": "Time Calculation",
+      "SEGMENT_NUMBER": 0,
+      "USED_SIZE": 10,
+      "RECORDS_COUNT": 40
+    }
+  ],
+  "roles": [
+    {
+      "ID": 1,
+      "Name": "Sales Rep",
+      "ModelPermission": "read"
+    },
+    {
+      "ID": 2,
+      "Name": "Auditor",
+      "ModelPermission": "read"
+    }
+  ],
+  "table_permissions": [
+    {
+      "RoleID": 1,
+      "TableID": 4,
+      "FilterExpression": "Customer[Region] = USERPRINCIPALNAME ()"
+    },
+    {
+      "RoleID": 2,
+      "TableID": 1,
+      "FilterExpression": null
+    }
+  ],
+  "hierarchies": [
+    {
+      "ID": 1,
+      "TableID": 2,
+      "Name": "Product Hierarchy",
+      "IsHidden": false
+    }
+  ],
+  "levels": [
+    {
+      "HierarchyID": 1,
+      "ColumnID": 24,
+      "Name": "Category",
+      "Ordinal": 0
+    },
+    {
+      "HierarchyID": 1,
+      "ColumnID": 21,
+      "Name": "Product",
+      "Ordinal": 1
+    }
+  ],
+  "calculation_groups": [
+    {
+      "ID": 1,
+      "TableID": 5
+    }
+  ],
+  "calculation_items": [
+    {
+      "CalculationGroupID": 1,
+      "Name": "Prior year margin",
+      "Ordinal": 0,
+      "Expression": "CALCULATE ( [Margin % (old)], SAMEPERIODLASTYEAR ( Sales[Order Number] ) )"
+    },
+    {
+      "CalculationGroupID": 1,
+      "Name": "Current",
+      "Ordinal": 1,
+      "Expression": "SELECTEDMEASURE ()"
+    }
+  ],
+  "detail_rows": [
+    {
+      "MeasureID": 51,
+      "Expression": "SELECTCOLUMNS ( Sales, \"Who\", RELATED ( Customer[Email] ) )"
+    }
+  ]
+}

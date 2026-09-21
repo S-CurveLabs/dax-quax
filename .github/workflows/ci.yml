@@ -1,0 +1,46 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    # Ubuntu on purpose. CONVENTIONS §10 promises the suite runs with no Power BI Desktop,
+    # no .NET and no network; running it anywhere else would let that promise rot quietly.
+    runs-on: ubuntu-latest
+    strategy:
+      # Both results, always. With fail-fast one version's failure cancels the other and
+      # hides whether the problem is the code or that one interpreter.
+      fail-fast: false
+      matrix:
+        # Every version pyproject.toml's requires-python claims. ">=3.12" is a promise to
+        # anyone installing this, and a promise no job exercises is a guess. Widening
+        # requires-python means adding the version here in the same commit.
+        python: ["3.12", "3.13", "3.14"]
+    name: test (py${{ matrix.python }})
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python }}
+      - run: pip install -e ".[dev,file,report,serve,mcp]"
+      # One version is enough for lint: ruff reads the target-version from pyproject.
+      - run: ruff check .
+        if: matrix.python == '3.12'
+      - run: pytest -q
+
+  imports-without-extras:
+    # Installed bare, so a dependency somebody added to the core requirements without
+    # declaring it in pyproject.toml shows up here and nowhere else. The check itself also
+    # blocks the known optional packages, which is why it runs as an ordinary test on a
+    # developer machine where every extra is present -- see tools/check_imports.py.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: pip install -e .
+      - run: python tools/check_imports.py

@@ -1,0 +1,49 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  build:
+    # Only the public copy publishes. The private repo carries this file so the two trees
+    # stay identical, and a tag pushed there must not race the real release to PyPI.
+    if: github.repository == 'S-CurveLabs/dax-quax'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      # A tag that disagrees with pyproject.toml would publish a version nobody asked for,
+      # and PyPI never lets a version number be reused.
+      - name: tag matches version
+        run: |
+          version=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
+          test "v$version" = "$GITHUB_REF_NAME" || { echo "tag $GITHUB_REF_NAME != v$version"; exit 1; }
+      - run: pip install -e ".[dev,file,report,serve,mcp]"
+      - run: pytest -q
+      - run: pip install build twine
+      - run: python -m build
+      - run: twine check --strict dist/*
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    # Trusted publishing: PyPI trusts this workflow and environment by name, so no API
+    # token is stored anywhere.
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/dax-quax/
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1

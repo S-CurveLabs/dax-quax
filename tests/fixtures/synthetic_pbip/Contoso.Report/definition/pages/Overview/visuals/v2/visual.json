@@ -1,0 +1,49 @@
+{
+  "name": "v2",
+  "position": { "x": 500, "y": 0, "width": 240, "height": 160 },
+  "visual": {
+    "visualType": "card",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": { "Measure": { "Expression": { "SourceRef": { "Entity": "Sales" } }, "Property": "Total Sales" } },
+              "queryRef": "Sales.Total Sales"
+            }
+          ]
+        }
+      }
+    },
+    "objects": {
+      "labels": [
+        {
+          "properties": {
+            "color": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Conditional": {
+                      "Cases": [
+                        {
+                          "Condition": {
+                            "Comparison": {
+                              "ComparisonKind": 2,
+                              "Left": { "Measure": { "Expression": { "SourceRef": { "Entity": "Sales" } }, "Property": "Margin % (old)" } },
+                              "Right": { "Literal": { "Value": "0D" } }
+                            }
+                          },
+                          "Value": { "Literal": { "Value": "'#D64550'" } }
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

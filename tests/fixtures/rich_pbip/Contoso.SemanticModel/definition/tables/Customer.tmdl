@@ -1,0 +1,29 @@
+table Customer
+
+	column 'Customer Key'
+		dataType: int64
+		isHidden
+		summarizeBy: none
+		sourceColumn: Customer Key
+
+	/// Referenced only by the row filter on the Sales Rep role.
+	column Region
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Region
+
+	/// Referenced only by the detail rows expression on [Total Sales].
+	column Email
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Email
+
+	partition Customer = m
+		mode: import
+		source =
+				let
+					Source = Sql.Database("server", "db")
+				in
+					Source
+
+	annotation PBI_ResultType = Table

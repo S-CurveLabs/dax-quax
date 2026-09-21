@@ -1,0 +1,19 @@
+{
+  "name": "b1",
+  "displayName": "Top products",
+  "explorationState": {
+    "sections": {
+      "Overview": {
+        "visualContainers": {
+          "v1": {
+            "filters": {
+              "byExpr": [
+                { "field": { "Column": { "Expression": { "SourceRef": { "Entity": "Product" } }, "Property": "Sort Order" } } }
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

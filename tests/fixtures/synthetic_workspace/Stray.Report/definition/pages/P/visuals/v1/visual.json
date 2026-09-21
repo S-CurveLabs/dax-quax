@@ -1,0 +1,26 @@
+{
+  "name": "v1",
+  "visual": {
+    "visualType": "card",
+    "query": {
+      "queryState": {
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Sales"
+                    }
+                  },
+                  "Property": "Quantity"
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

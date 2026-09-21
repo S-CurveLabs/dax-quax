@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ title }}</title>
+{% include "_styles.html.j2" %}
+<style>
+  .modelcard { background: var(--raised); border: 1px solid var(--line); border-radius: 8px;
+    padding: 14px 16px; margin-bottom: 12px; }
+  .modelcard.weak { border-left: 3px solid var(--violet); }
+  .modelcard.orphan { border-left: 3px solid var(--amber); }
+  .modelcard .top { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .modelcard h3 { margin: 0; font-family: var(--mono); font-size: 15px; font-weight: 600; }
+  .modelcard .scope { font-size: 11.5px; color: var(--faint); }
+  .modelcard .open { margin-left: auto; font-size: 12.5px; }
+  .tally { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .findinglist { margin-top: 10px; border-top: 1px solid var(--line-soft); padding-top: 10px; }
+  .findingrow { display: flex; gap: 10px; align-items: baseline; padding: 3px 0; flex-wrap: wrap; }
+  .findingrow .who { font-size: 11.5px; color: var(--faint); }
+  .linktable { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  .linktable td { padding: 6px 8px; border-bottom: 1px solid var(--line-soft); font-size: 12.5px; }
+  .linktable td.rep { font-family: var(--mono); }
+  .linktable tr.bad td { color: #c9a577; }
+  .why { font-size: 11.5px; color: var(--faint); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="inner">
+    <h1>dax&#8209;quax</h1>
+    <div class="meta">{{ root }} &middot; workspace scan</div>
+    <div class="meta" style="margin-left:auto">{{ coverage }}</div>
+    {% if served %}
+    <span class="meta" id="loadstate">read {{ loaded_at }}</span>
+    <button id="rescan" type="button" class="chip" aria-live="polite">Rescan</button>
+    {% endif %}
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="stats">
+    <div class="stat">
+      <div class="label">MODELS</div>
+      <div class="value">{{ model_count }}</div>
+      <div class="sub">{{ object_count }} objects assessed</div>
+    </div>
+    <div class="stat">
+      <div class="label">REPORTS</div>
+      <div class="value">{{ report_count }}</div>
+      <div class="sub">{{ matched_count }} matched to a model</div>
+    </div>
+    <div class="stat {{ 'teal' if trustworthy else '' }}">
+      <div class="label">REMOVABLE</div>
+      <div class="value">{{ removable_objects if trustworthy else '&mdash;'|safe }}</div>
+      <div class="sub">
+        {% if trustworthy %}across every model{% else %}withheld &mdash; the scan is incomplete{% endif %}
+      </div>
+    </div>
+    <div class="stat {{ 'amber' if orphans else '' }}">
+      <div class="label">ORPHAN MODELS</div>
+      <div class="value">{{ orphans|length }}</div>
+      <div class="sub">nothing in this scan references them</div>
+    </div>
+  </div>
+
+  <div class="coverage{{ '' if trustworthy else ' weak' }}">
+    <strong>Scope:</strong> {{ coverage }}.
+    {% if trustworthy %}
+    Every report in this directory was matched to a model, so a REMOVE verdict means nothing
+    in the model and nothing in any of these reports references the object.
+    {% else %}
+    {{ unmatched|length }} report(s) could not be matched to a model, so their usage was not
+    counted. An unmatched report could belong to <em>any</em> model here, so
+    <strong>no object anywhere in this scan is reported as removable</strong> &mdash; every
+    unreferenced object is UNKNOWN until the matching is fixed.
+    {% endif %}
+  </div>
+
+  {% if diagram %}
+  <h2 style="font-size:12px;letter-spacing:.8px;color:var(--faint);margin:26px 0 10px">
+    HOW THIS WORKSPACE FITS TOGETHER
+  </h2>
+  {{ diagram|safe }}
+  {% endif %}
+
+  <h2 style="font-size:12px;letter-spacing:.8px;color:var(--faint);margin:26px 0 0">REPORTS AND THEIR MODELS</h2>
+  <table class="linktable">
+    {% for link in links %}
+    <tr class="{{ '' if link.model else 'bad' }}">
+      <td class="rep">{{ link.name }}</td>
+      <td style="width:40px;color:var(--faint)">&rarr;</td>
+      <td class="rep">
+        {% if link.model %}{{ link.model }}{% else %}<strong>unmatched</strong>{% endif %}
+      </td>
+      <td class="why">{{ link.reason or link.how }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+
+  <h2 style="font-size:12px;letter-spacing:.8px;color:var(--faint);margin:26px 0 12px">MODELS</h2>
+  {% for model in models %}
+  <div class="modelcard {{ 'orphan' if model.orphan else ('' if model.trustworthy else 'weak') }}">
+    <div class="top">
+      <h3>{{ model.name }}</h3>
+      <span class="scope">{{ model.scope }}{% if model.orphan %} &middot; no report in this scan references it{% endif %}</span>
+      <a class="open" href="{{ model.href }}">open &rarr;</a>
+    </div>
+    <div class="tally">
+      {% for verdict, count in model.tally %}
+      <span class="badge {{ verdict }}">{{ verdict }} {{ count }}</span>
+      {% endfor %}
+    </div>
+    {% if model.findings %}
+    <div class="findinglist">
+      {% for finding in model.findings %}
+      <div class="findingrow">
+        <span class="badge {{ finding.verdict }}">{{ finding.verdict }}</span>
+        <span class="mono" style="font-size:12.5px">{{ finding.key }}</span>
+        <span class="mono" style="font-size:12px;color:var(--dim)">{{ finding.size }}</span>
+        {% if finding.used_by %}
+        <span class="who">used by {{ finding.used_by|join('; ') }}</span>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+
+  {% if cross_model %}
+  <h2 style="font-size:12px;letter-spacing:.8px;color:var(--faint);margin:26px 0 8px">MODELS READING OTHER MODELS</h2>
+  <div class="list" style="font-size:12.5px">
+    {% for reader, target in cross_model %}
+    {{ reader }} &rarr; {{ target or 'another semantic model (target not in this scan)' }}<br>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="disclosure">
+    <h2>WHAT THIS SCAN COULD NOT SEE</h2>
+    <p style="font-size:12.5px;line-height:1.6;color:#c9b79a;margin:8px 0 0">
+      Scanning every report in a directory is a far better answer than scanning one. It is not
+      certainty. Read every verdict against this list.
+    </p>
+    <ul>
+      <li><strong>.pbip is source, not deployment.</strong> A report that exists only in the
+        workspace, and was never committed here, is invisible to this scan.</li>
+      <li>Consumers that are not .pbip artefacts are invisible: Excel via Analyze in Excel,
+        paginated reports, embedded apps, anything using the XMLA endpoint.</li>
+      <li>byConnection matching is by dataset <em>name</em>, so a renamed or moved dataset
+        reads as unmatched even when the report is really about a model that is here.</li>
+      {% for spot in extra_blind_spots %}
+      <li>{{ spot }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  {% if warnings %}
+  <div class="warnbox">
+    <h2>SCAN WARNINGS</h2>
+    <ul>
+      {% for warning in warnings %}
+      <li>{{ warning }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  <footer>
+    {% if served %}
+    read {{ loaded_at }} &middot; scan {{ scans }} &middot; served by dax-quax
+    {% else %}
+    generated {{ generated_at }} by dax-quax &middot; self-contained, no network required
+    {% endif %}
+  </footer>
+</div>
+
+{% if served %}
+<script>
+// The only script on this page. Same shape as the model page's rescan: re-read, then
+// reload, because every total in the header changes and a swapped fragment would leave
+// a stale one above fresh cards.
+(function () {
+  const button = document.getElementById("rescan");
+  if (!button) return;
+  button.addEventListener("click", () => {
+    button.textContent = "Reading…";
+    fetch("/api/rescan", { method: "POST" })
+      .then(r => r.ok ? location.reload() : Promise.reject(r.status))
+      .catch(err => {
+        button.textContent = "Rescan failed";
+        document.getElementById("loadstate").textContent = "error " + err;
+      });
+  });
+})();
+</script>
+{% endif %}
+</body>
+</html>

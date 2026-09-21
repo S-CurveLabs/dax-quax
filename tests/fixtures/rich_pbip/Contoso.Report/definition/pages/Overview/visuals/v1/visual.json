@@ -1,0 +1,37 @@
+{
+  "name": "v1",
+  "position": { "x": 0, "y": 0, "width": 480, "height": 320 },
+  "visual": {
+    "visualType": "barChart",
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": { "Column": { "Expression": { "SourceRef": { "Entity": "Product" } }, "Property": "Product Name" } },
+              "queryRef": "Product.Product Name",
+              "nativeQueryRef": "Product Name"
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": { "Measure": { "Expression": { "SourceRef": { "Entity": "Sales" } }, "Property": "Total Quantity" } },
+              "queryRef": "Sales.Total Quantity",
+              "nativeQueryRef": "Total Quantity"
+            }
+          ]
+        }
+      }
+    },
+    "sortDefinition": {
+      "sort": [
+        {
+          "field": { "Measure": { "Expression": { "SourceRef": { "Entity": "Sales" } }, "Property": "Total Quantity" } },
+          "direction": "Descending"
+        }
+      ]
+    }
+  }
+}

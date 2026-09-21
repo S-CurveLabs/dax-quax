@@ -1,0 +1,18 @@
+table 'Time Intelligence'
+
+	calculationGroup
+		precedence: 10
+
+		/// The only remaining consumer of the superseded margin measure.
+		calculationItem 'Prior year margin' = CALCULATE ( [Margin % (old)], SAMEPERIODLASTYEAR ( Sales[Order Number] ) )
+
+		calculationItem Current = SELECTEDMEASURE ()
+
+	column 'Time Calculation'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Name
+
+	partition 'Time Intelligence' = calculated
+		mode: import
+		source = { "Current" }

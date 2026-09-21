@@ -1,0 +1,56 @@
+table Sales
+
+	column 'Order Number'
+		dataType: string
+		lineageTag: 6a1b0f0e-0000-4000-9000-000000000010
+		summarizeBy: none
+		sourceColumn: Order Number
+
+		annotation SummarizationSetBy = Automatic
+
+	column Quantity
+		dataType: int64
+		formatString: 0
+		lineageTag: 6a1b0f0e-0000-4000-9000-000000000011
+		summarizeBy: sum
+		sourceColumn: Quantity
+
+	/// Materialised line total. Costs storage that a measure would not.
+	column 'Line Amount' = Sales[Quantity] * RELATED ( Product[List Price] )
+		dataType: double
+		lineageTag: 6a1b0f0e-0000-4000-9000-000000000012
+		summarizeBy: sum
+
+	column 'Product Key'
+		dataType: int64
+		isHidden
+		lineageTag: 6a1b0f0e-0000-4000-9000-000000000014
+		summarizeBy: none
+		sourceColumn: Product Key
+
+	measure 'Total Quantity' = SUM ( Sales[Quantity] )
+		formatString: #,0
+		lineageTag: 6a1b0f0e-0000-4000-9000-000000000050
+
+	measure 'Total Sales' = SUMX ( Sales, Sales[Line Amount] )
+		formatString: \$#,0.00
+		lineageTag: 6a1b0f0e-0000-4000-9000-000000000051
+		detailRowsDefinition =
+				SELECTCOLUMNS ( Sales, "Who", RELATED ( Customer[Email] ) )
+
+	/// Superseded. Kept only because a card still colours itself by it.
+	measure 'Margin % (old)' =
+			DIVIDE ( [Total Sales], 1 )
+		isHidden
+		lineageTag: 6a1b0f0e-0000-4000-9000-000000000052
+
+	partition Sales = m
+		mode: import
+		source =
+				let
+					Source = Sql.Database("server", "db"),
+					Sales = Source{[Schema="dbo",Item="Sales"]}[Data]
+				in
+					Sales
+
+	annotation PBI_ResultType = Table

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definitionProperties/1.0.0/schema.json",
+  "version": "1.0",
+  "datasetReference": {
+    "byConnection": {
+      "connectionString": "Data Source=powerbi://api.powerbi.com/v1.0/myorg/Analytics;Initial Catalog=Regional;Integrated Security=ClaimsToken",
+      "pbiServiceModelId": null,
+      "pbiModelVirtualServerName": "sobe_wowvirtualserver",
+      "pbiModelDatabaseName": "5f9a0c31-2d4e-4a77-bd10-9c2e6b83aa41",
+      "connectionType": "pbiServiceXmlaStyleLive",
+      "name": "EntityDataSource"
+    }
+  }
+}

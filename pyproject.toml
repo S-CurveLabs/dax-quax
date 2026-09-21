@@ -1,0 +1,89 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "dax-quax"
+version = "0.1.0"
+description = "What does every object in this tabular model cost, what depends on it, and can it be deleted?"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.12"
+authors = [{ name = "S-Curve Labs" }]
+keywords = ["power-bi", "tabular", "vertipaq", "dax", "tmdl", "pbip", "mcp"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Database",
+    "Topic :: Software Development :: Quality Assurance",
+]
+dependencies = ["pandas>=2.0", "networkx>=3.0"]
+
+[project.urls]
+Homepage = "https://github.com/S-CurveLabs/dax-quax"
+Source = "https://github.com/S-CurveLabs/dax-quax"
+Issues = "https://github.com/S-CurveLabs/dax-quax/issues"
+
+[project.optional-dependencies]
+live = ["pythonnet>=3.0"]
+file = ["pbixray>=0.3"]
+report = ["jinja2>=3.1"]
+serve = ["fastapi>=0.110", "uvicorn>=0.29"]
+mcp = ["mcp>=2.2"]
+dev = ["pytest>=8.0", "ruff>=0.6"]
+
+[project.scripts]
+dax-quax = "dax_quax.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/dax_quax"]
+# Never ship the vendored .NET assemblies. They are Microsoft's, whether we may
+# redistribute them is unsettled, and they are 5 MB that only a live connection uses --
+# `dax-quax install-runtime` fetches them per user instead. Hatchling already honours
+# .gitignore, where _libs/ also sits; this says it outright so the exclusion survives
+# anyone changing how files are selected.
+exclude = ["_libs/**"]
+
+[tool.hatch.build.targets.sdist]
+# The borrowed corpora are fetched per-developer, never shipped. None of them carries a
+# licence: the .pbix samples come from tools/fetch_pbix.py, the demo project from
+# tools/fetch_demo.py, and demo01 is recorded from that project loaded into Desktop.
+# .gitignore keeps them out of the repo, but hatchling's sdist does not honour the
+# re-ignore lines that follow `!tests/fixtures/**`, so it collected them off the local
+# disk instead -- a 28 MB sdist against a 148 KB wheel. Naming them here is what stops an
+# upload from redistributing 26 MB of somebody else's content.
+exclude = [
+    "/tests/fixtures/demo/**",
+    "/tests/fixtures/demo01/**",
+    "/tests/fixtures/pbix/**",
+    "/.claude/**",
+    # Private-repo only; tools/export_public.py leaves them out of the public tree too.
+    "/CONVENTIONS.md",
+    "/CODE_REVIEW.md",
+    "/spikes/**",
+    "/tools/export_public.py",
+]
+
+[tool.ruff]
+line-length = 100
+# spikes/ are frozen reproduction scripts for a finding, not maintained source.
+extend-exclude = ["spikes"]
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# so `pytest` works without an editable install, which CI should not need
+pythonpath = ["src"]
+markers = [
+    "live: requires a running Power BI Desktop instance (deselected by default)",
+    "pbix: requires a real .pbix via DAXQUAX_TEST_PBIX (deselected by default)",
+    "demo: requires the borrowed .pbip corpus; run tools/fetch_demo.py first",
+]
+addopts = "-m 'not live and not pbix and not demo'"

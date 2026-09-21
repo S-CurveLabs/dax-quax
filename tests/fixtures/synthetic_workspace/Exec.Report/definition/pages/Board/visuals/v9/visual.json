@@ -1,0 +1,38 @@
+{
+  "name": "v9",
+  "visual": {
+    "visualType": "table",
+    "query": {
+      "queryState": {
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Sales"
+                    }
+                  },
+                  "Property": "Order Number"
+                }
+              }
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Sales"
+                    }
+                  },
+                  "Property": "Total Sales"
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

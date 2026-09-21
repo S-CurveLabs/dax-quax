@@ -1,0 +1,15 @@
+table Region
+
+	column 'Region Name'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Region Name
+
+	column 'Region Code'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Region Code
+
+	partition Region = m
+		mode: import
+		source = let x = 1 in x

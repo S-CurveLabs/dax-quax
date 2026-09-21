@@ -1,0 +1,53 @@
+# python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.ruff_cache/
+
+# vendored .NET assemblies — fetched, not committed
+spikes/**/libs/
+src/dax_quax/_libs/
+*.nupkg
+*.runtimeconfig.json
+
+# local model artefacts
+*.pbix
+*.pbip
+*.abf
+*.vpax
+cache.abf
+
+# ...but fixtures are exempt. The synthetic .pbip project has to be committed, and
+# the patterns above would otherwise swallow it. Last matching rule wins, so this
+# has to sit after them.
+!tests/fixtures/**
+
+# local scratch renders
+.scratch/
+
+# a real .pbip corpus, borrowed rather than vendored (tools/fetch_demo.py).
+# It carries no licence, and CONVENTIONS §10 keeps CI offline.
+tests/fixtures/demo/
+
+# A fixture recorded from the borrowed corpus loaded into Power BI Desktop. Derived from
+# unlicensed content, so it is reproduced rather than committed:
+#   python tools/fetch_demo.py && open Report01.pbip && python tools/record_fixture.py demo01
+tests/fixtures/demo01/
+
+# Real .pbix samples, borrowed for the pbixray contract (tools/fetch_pbix.py).
+tests/fixtures/pbix/
+
+# Generated review / audit reports, from agents or otherwise. Each one is a snapshot of
+# one pass over the tree: it goes stale the moment a finding is fixed, and a stale one
+# gets quoted back as current fact. Keep what survived triage in CONVENTIONS or a test.
+*_report.md
+*_REPORT.md
+*review*.md
+*REVIEW*.md
+*redteam*.md
+*audit*.md

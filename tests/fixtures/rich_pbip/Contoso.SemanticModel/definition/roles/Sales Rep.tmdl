@@ -1,0 +1,4 @@
+role 'Sales Rep'
+	modelPermission: read
+
+	tablePermission Customer = Customer[Region] = USERPRINCIPALNAME ()

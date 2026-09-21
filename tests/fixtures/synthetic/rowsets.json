@@ -1,0 +1,330 @@
+{
+  "_comment": "SYNTHETIC fixture, refitted 2026-09-18 to the shapes a real Power BI Desktop 2.157.1354.0 returns: TABLE_ID and COLUMN_ID carry a ' (id)' suffix, storage columns join on ATTRIBUTE_NAME and only COLUMN_TYPE='BASIC_DATA' rows are user columns, and there are no '$table$column' dictionary pseudo-tables -- so cardinality is not available from these rowsets at all. It still exercises plumbing and arithmetic rather than confirming the engine's behaviour; tests/fixtures/demo01 is recorded.",
+  "tables": [
+    {
+      "ID": 1,
+      "Name": "Sales",
+      "IsHidden": false
+    },
+    {
+      "ID": 2,
+      "Name": "Product",
+      "IsHidden": false
+    },
+    {
+      "ID": 3,
+      "Name": "LocalDateTable_8f3c1e2a-0000-4000-9000-1234567890ab",
+      "IsHidden": true
+    }
+  ],
+  "columns": [
+    {
+      "ID": 10,
+      "TableID": 1,
+      "Type": 1,
+      "ExplicitName": "Order Number",
+      "ExplicitDataType": 2,
+      "IsHidden": false
+    },
+    {
+      "ID": 11,
+      "TableID": 1,
+      "Type": 1,
+      "ExplicitName": "Quantity",
+      "ExplicitDataType": 6,
+      "IsHidden": false
+    },
+    {
+      "ID": 12,
+      "TableID": 1,
+      "Type": 2,
+      "ExplicitName": "Line Amount",
+      "ExplicitDataType": 8,
+      "IsHidden": false,
+      "Expression": "Sales[Quantity] * RELATED ( Product[List Price] )"
+    },
+    {
+      "ID": 13,
+      "TableID": 1,
+      "Type": 3,
+      "InferredName": "RowNumber-2662979B-1795-4F74-8F37-6A1BA8059B61"
+    },
+    {
+      "ID": 14,
+      "TableID": 1,
+      "Type": 1,
+      "ExplicitName": "Product Key",
+      "ExplicitDataType": 6,
+      "IsHidden": true
+    },
+    {
+      "ID": 20,
+      "TableID": 2,
+      "Type": 1,
+      "ExplicitName": "Product Key",
+      "ExplicitDataType": 6,
+      "IsHidden": true
+    },
+    {
+      "ID": 21,
+      "TableID": 2,
+      "Type": 1,
+      "ExplicitName": "Product Name",
+      "ExplicitDataType": 2,
+      "IsHidden": false,
+      "SortByColumnID": 22,
+      "DisplayFolder": "Attributes"
+    },
+    {
+      "ID": 22,
+      "TableID": 2,
+      "Type": 1,
+      "ExplicitName": "Sort Order",
+      "ExplicitDataType": 6,
+      "IsHidden": true
+    },
+    {
+      "ID": 23,
+      "TableID": 2,
+      "Type": 1,
+      "ExplicitName": "List Price",
+      "ExplicitDataType": 10,
+      "IsHidden": false
+    },
+    {
+      "ID": 99,
+      "TableID": 404,
+      "Type": 1,
+      "ExplicitName": "Orphan",
+      "ExplicitDataType": 2
+    }
+  ],
+  "measures": [
+    {
+      "ID": 50,
+      "TableID": 1,
+      "Name": "Total Quantity",
+      "Expression": "SUM ( Sales[Quantity] )",
+      "IsHidden": false
+    },
+    {
+      "ID": 51,
+      "TableID": 1,
+      "Name": "Total Sales",
+      "Expression": "SUMX ( Sales, Sales[Line Amount] )",
+      "IsHidden": false,
+      "FormatString": "\\$#,0.00"
+    },
+    {
+      "ID": 52,
+      "TableID": 1,
+      "Name": "Margin % (old)",
+      "Expression": "DIVIDE ( [Total Sales], 1 )",
+      "IsHidden": true
+    }
+  ],
+  "relationships": [
+    {
+      "FromTableID": 1,
+      "FromColumnID": 14,
+      "ToTableID": 2,
+      "ToColumnID": 20,
+      "IsActive": true,
+      "CrossFilteringBehavior": "OneDirection"
+    },
+    {
+      "FromTableID": 1,
+      "FromColumnID": 777,
+      "ToTableID": 2,
+      "ToColumnID": 20,
+      "IsActive": false
+    }
+  ],
+  "partitions": [
+    {
+      "TableID": 1,
+      "Mode": "Import"
+    },
+    {
+      "TableID": 2,
+      "Mode": "Import"
+    }
+  ],
+  "storage_tables": [
+    {
+      "DIMENSION_NAME": "Sales",
+      "TABLE_ID": "Sales (13)",
+      "ROWS_COUNT": 1000
+    },
+    {
+      "DIMENSION_NAME": "Product",
+      "TABLE_ID": "Product (31)",
+      "ROWS_COUNT": 40
+    }
+  ],
+  "storage_columns": [
+    {
+      "DIMENSION_NAME": "Sales",
+      "COLUMN_ID": "Order Number (10)",
+      "DICTIONARY_SIZE": 5000,
+      "COLUMN_ENCODING": "HASH",
+      "ATTRIBUTE_NAME": "Order Number",
+      "COLUMN_TYPE": "BASIC_DATA",
+      "TABLE_ID": "Sales (13)"
+    },
+    {
+      "DIMENSION_NAME": "Sales",
+      "COLUMN_ID": "Quantity (16)",
+      "DICTIONARY_SIZE": 200,
+      "COLUMN_ENCODING": "VALUE",
+      "ATTRIBUTE_NAME": "Quantity",
+      "COLUMN_TYPE": "BASIC_DATA",
+      "TABLE_ID": "Sales (13)"
+    },
+    {
+      "DIMENSION_NAME": "Sales",
+      "COLUMN_ID": "Line Amount (19)",
+      "DICTIONARY_SIZE": 300,
+      "COLUMN_ENCODING": "HASH",
+      "ATTRIBUTE_NAME": "Line Amount",
+      "COLUMN_TYPE": "BASIC_DATA",
+      "TABLE_ID": "Sales (13)"
+    },
+    {
+      "DIMENSION_NAME": "Sales",
+      "COLUMN_ID": "Product Key (22)",
+      "DICTIONARY_SIZE": 150,
+      "COLUMN_ENCODING": "VALUE",
+      "ATTRIBUTE_NAME": "Product Key",
+      "COLUMN_TYPE": "BASIC_DATA",
+      "TABLE_ID": "Sales (13)"
+    },
+    {
+      "DIMENSION_NAME": "Sales",
+      "COLUMN_ID": "RowNumber-2662979B-1795-4F74-8F37-6A1BA8059B61 (25)",
+      "DICTIONARY_SIZE": 0,
+      "COLUMN_ENCODING": "VALUE",
+      "ATTRIBUTE_NAME": "RowNumber-2662979B-1795-4F74-8F37-6A1BA8059B61",
+      "COLUMN_TYPE": "BASIC_DATA",
+      "TABLE_ID": "Sales (13)"
+    },
+    {
+      "DIMENSION_NAME": "Product",
+      "COLUMN_ID": "Product Name (28)",
+      "DICTIONARY_SIZE": 80,
+      "COLUMN_ENCODING": "HASH",
+      "ATTRIBUTE_NAME": "Product Name",
+      "COLUMN_TYPE": "BASIC_DATA",
+      "TABLE_ID": "Product (31)"
+    },
+    {
+      "DIMENSION_NAME": "Product",
+      "COLUMN_ID": "Sort Order (34)",
+      "DICTIONARY_SIZE": 40,
+      "COLUMN_ENCODING": "VALUE",
+      "ATTRIBUTE_NAME": "Sort Order",
+      "COLUMN_TYPE": "BASIC_DATA",
+      "TABLE_ID": "Product (31)"
+    },
+    {
+      "DIMENSION_NAME": "Product",
+      "COLUMN_ID": "List Price (37)",
+      "DICTIONARY_SIZE": 60,
+      "COLUMN_ENCODING": "VALUE",
+      "ATTRIBUTE_NAME": "List Price",
+      "COLUMN_TYPE": "BASIC_DATA",
+      "TABLE_ID": "Product (31)"
+    },
+    {
+      "DIMENSION_NAME": "Sales",
+      "ATTRIBUTE_NAME": "Order Number",
+      "COLUMN_ID": "POS_TO_ID",
+      "COLUMN_TYPE": "HIERARCHY_POSITION_TO_DATAID",
+      "DICTIONARY_SIZE": 999999,
+      "COLUMN_ENCODING": 0,
+      "TABLE_ID": "Sales (13)"
+    }
+  ],
+  "segments": [
+    {
+      "DIMENSION_NAME": "Sales",
+      "TABLE_ID": "Sales (13)",
+      "COLUMN_ID": "Order Number (10)",
+      "SEGMENT_NUMBER": 0,
+      "USED_SIZE": 1200,
+      "RECORDS_COUNT": 600
+    },
+    {
+      "DIMENSION_NAME": "Sales",
+      "TABLE_ID": "Sales (13)",
+      "COLUMN_ID": "Order Number (10)",
+      "SEGMENT_NUMBER": 1,
+      "USED_SIZE": 800,
+      "RECORDS_COUNT": 400
+    },
+    {
+      "DIMENSION_NAME": "Sales",
+      "TABLE_ID": "Sales (13)",
+      "COLUMN_ID": "Quantity (16)",
+      "SEGMENT_NUMBER": 0,
+      "USED_SIZE": 100,
+      "RECORDS_COUNT": 1000
+    },
+    {
+      "DIMENSION_NAME": "Sales",
+      "TABLE_ID": "Sales (13)",
+      "COLUMN_ID": "Line Amount (19)",
+      "SEGMENT_NUMBER": 0,
+      "USED_SIZE": 120,
+      "RECORDS_COUNT": 1000
+    },
+    {
+      "DIMENSION_NAME": "Sales",
+      "TABLE_ID": "Sales (13)",
+      "COLUMN_ID": "Product Key (22)",
+      "SEGMENT_NUMBER": 0,
+      "USED_SIZE": 80,
+      "RECORDS_COUNT": 1000
+    },
+    {
+      "DIMENSION_NAME": "Sales",
+      "TABLE_ID": "Sales (13)",
+      "COLUMN_ID": "RowNumber-2662979B-1795-4F74-8F37-6A1BA8059B61 (25)",
+      "SEGMENT_NUMBER": 0,
+      "USED_SIZE": 10,
+      "RECORDS_COUNT": 1000
+    },
+    {
+      "DIMENSION_NAME": "Sales",
+      "TABLE_ID": "H$Sales (13)$Order Number (10)",
+      "COLUMN_ID": "Order Number (10)",
+      "SEGMENT_NUMBER": 0,
+      "USED_SIZE": 25,
+      "RECORDS_COUNT": 1000
+    },
+    {
+      "DIMENSION_NAME": "Product",
+      "TABLE_ID": "Product (31)",
+      "COLUMN_ID": "Product Name (28)",
+      "SEGMENT_NUMBER": 0,
+      "USED_SIZE": 50,
+      "RECORDS_COUNT": 40
+    },
+    {
+      "DIMENSION_NAME": "Product",
+      "TABLE_ID": "Product (31)",
+      "COLUMN_ID": "Sort Order (34)",
+      "SEGMENT_NUMBER": 0,
+      "USED_SIZE": 20,
+      "RECORDS_COUNT": 40
+    },
+    {
+      "DIMENSION_NAME": "Product",
+      "TABLE_ID": "Product (31)",
+      "COLUMN_ID": "List Price (37)",
+      "SEGMENT_NUMBER": 0,
+      "USED_SIZE": 30,
+      "RECORDS_COUNT": 40
+    }
+  ]
+}

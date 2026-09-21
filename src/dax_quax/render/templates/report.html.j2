@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ title }}</title>
+{% include "_styles.html.j2" %}
+</head>
+<body>
+
+<header>
+  <div class="inner">
+    <h1>dax&#8209;quax</h1>
+    {% if back %}<a class="meta" href="{{ back[0] }}">&larr; {{ back[1] }}</a>{% endif %}
+    <div class="meta">{{ model_name }} &middot; {{ source }} &middot; scanned {{ scanned_at }}</div>
+    <div class="meta" style="margin-left:auto">
+      {{ counts.tables }} tables &middot; {{ counts.columns }} columns &middot; {{ counts.measures }} measures
+      {% if report_scanned %}&middot; {{ report_names|join(', ') }} ({{ report_pages }}p / {{ report_visuals }}v){% endif %}
+    </div>
+    {% if served %}
+    <span class="meta" id="loadstate">read {{ loaded_at }}</span>
+    <button id="rescan" type="button" class="chip" aria-live="polite">Rescan</button>
+    {% endif %}
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="stats">
+    <div class="stat">
+      <div class="label">MEASURED SIZE</div>
+      <div class="value">{{ summary.measured_bytes_h }}</div>
+      <div class="sub">{{ summary.objects }} objects assessed</div>
+    </div>
+    <div class="stat teal">
+      <div class="label">REMOVABLE</div>
+      <div class="value">{{ summary.removable_bytes_h }}</div>
+      <div class="sub">{{ summary.removable_objects }} object(s) &middot; {{ "%.1f"|format(summary.removable_pct) }}% of measured</div>
+    </div>
+    <div class="stat amber">
+      <div class="label">NEEDS REVIEW</div>
+      <div class="value">{{ summary.review_bytes_h }}</div>
+      <div class="sub">{{ summary.review_objects }} object(s)</div>
+    </div>
+    <div class="stat">
+      <div class="label">{% if report_scanned %}UNRESOLVED{% else %}UNKNOWN{% endif %}</div>
+      <div class="value">{{ summary.unknown_objects }}</div>
+      <div class="sub">
+        {% if report_scanned %}no references found anywhere scanned{% else %}unreferenced, but no report was scanned{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="coverage{{ '' if scope_trustworthy else ' weak' }}">
+    <strong>Scope:</strong> {{ scope }}.
+    {% if scope_trustworthy %}
+    A REMOVE verdict below means nothing in the model and nothing in {{ report_names|join(', ') }}
+    references the object.
+    {% else %}
+    No verdict below claims an object is removable &mdash; every unreferenced object is UNKNOWN.
+    {% endif %}
+  </div>
+
+  {% if diagram %}
+  <h2 style="font-size:12px;letter-spacing:.8px;color:var(--faint);margin:26px 0 10px">
+    HOW THIS MODEL FITS TOGETHER
+  </h2>
+  {{ diagram|safe }}
+  {% endif %}
+
+  <div class="controls">
+    <label for="q" style="position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)">Filter objects</label>
+    <input id="q" type="search" placeholder="Filter objects&hellip;">
+    {% for v in verdicts %}
+    <button class="chip" type="button" data-verdict="{{ v }}" aria-pressed="true">{{ v }} {{ verdict_counts[v] }}</button>
+    {% endfor %}
+    <span class="count" id="count"></span>
+  </div>
+
+  <div class="tablewrap">
+  <table id="tbl">
+    <thead>
+      <tr>
+        <th data-sort="key" data-type="text">OBJECT</th>
+        <th data-sort="bytes_raw" data-type="num" class="num" aria-sort="descending">SIZE</th>
+        <th data-sort="bytes_raw" data-type="num">SHARE</th>
+        <th data-sort="cardinality" data-type="text" class="num">CARDINALITY</th>
+        <th data-sort="encoding" data-type="text">ENCODING</th>
+        <th data-sort="model_refs" data-type="num" class="num">REFS</th>
+        <th data-sort="report_bindings" data-type="num" class="num">VISUALS</th>
+        <th data-sort="verdict" data-type="text">VERDICT</th>
+      </tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+  </div>
+
+  {% if report_findings %}
+  <h2 style="font-size:12px;letter-spacing:.8px;color:var(--faint);margin:26px 0 10px">
+    THE REPORT LAYER &middot; {{ report_findings|length }} FINDING(S)
+  </h2>
+  <table class="findings">
+    {% for f in report_findings %}
+    <tr{% if f.broken %} class="broken"{% endif %}>
+      <td class="kind">{{ f.kind }}</td>
+      <td class="subject">{{ f.subject }}</td>
+      <td class="detail">
+        {{ f.detail }}
+        {% if f.uri %}<a class="src" href="{{ f.uri }}" title="{{ f.file }}">open the file &rarr;</a>{% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+
+  <div class="disclosure">
+    <h2>WHAT THIS SCAN COULD NOT SEE</h2>
+    <p style="font-size:12.5px;line-height:1.6;color:#c9b79a;margin:8px 0 0">
+      A verdict of REMOVE means nothing referenced the object <em>in what was scanned</em>. Read it against this list.
+    </p>
+    <ul>
+      {% for spot in blind_spots %}
+      <li>{{ spot }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  {% if warnings %}
+  <div class="warnbox">
+    <h2>SCAN WARNINGS</h2>
+    <ul>
+      {% for warning in warnings %}
+      <li>{{ warning }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  <footer>generated {{ generated_at }} by dax-quax &middot; self-contained, no network required</footer>
+</div>
+
+<aside id="panel" aria-live="polite"></aside>
+
+<script type="application/json" id="data">{{ rows_json|safe }}</script>
+<script>
+(function () {
+  const ROWS = JSON.parse(document.getElementById("data").textContent);
+  // Served mode draws lineage on demand; a saved file has no server to ask.
+  const SERVED = {{ 'true' if served else 'false' }};
+  // Told, not inferred: a relative "api/" resolves against whatever path this page
+  // is served at, and the workspace serves model pages below the root.
+  const API = {{ api_base|tojson }};
+  let gRadius = 2, gDirection = "both";
+  const tbody = document.getElementById("rows");
+  const panel = document.getElementById("panel");
+  const counter = document.getElementById("count");
+  const search = document.getElementById("q");
+  const chips = [...document.querySelectorAll(".chip")];
+  let sortKey = "bytes_raw", sortDir = -1, selected = null;
+
+  const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  function active() {
+    const needle = search.value.trim().toLowerCase();
+    const on = new Set(chips.filter(c => c.getAttribute("aria-pressed") === "true")
+                            .map(c => c.dataset.verdict));
+    return ROWS.filter(r => on.has(r.verdict) &&
+      (!needle || r.key.toLowerCase().includes(needle) ||
+                  (r.table || "").toLowerCase().includes(needle)));
+  }
+
+  function draw() {
+    const rows = active().sort((a, b) => {
+      const x = a[sortKey], y = b[sortKey];
+      if (typeof x === "number" && typeof y === "number") return (x - y) * sortDir;
+      return String(x).localeCompare(String(y)) * sortDir;
+    });
+    tbody.innerHTML = rows.map(r => `
+      <tr data-key="${esc(r.key)}"${r.key === selected ? ' aria-selected="true"' : ""}>
+        <td class="obj"><span class="pill ${r.kind_label}">${r.kind_label}</span>
+          <span style="display:inline-block;margin-left:8px;vertical-align:middle">
+            <span class="tbl">${esc(r.table || "")}${r.hidden ? " &middot; hidden" : ""}</span><br>
+            <span class="nm">${esc(r.name)}</span></span></td>
+        <td class="num mono ${r.measured ? "" : "unmeasured"}">${esc(r.bytes_h)}</td>
+        <td><span class="track"><span class="fill" style="width:${r.bar_pct.toFixed(1)}%"></span></span>
+          <span class="mono" style="color:var(--dim);margin-left:8px">${esc(r.pct)}</span></td>
+        <td class="num mono">${esc(r.cardinality)}</td>
+        <td class="mono" style="font-size:11px;color:var(--dim)">${esc(r.encoding)}</td>
+        <td class="num mono">${r.model_refs}</td>
+        <td class="num mono">${r.report_bindings}</td>
+        <td><span class="badge ${r.verdict}">${r.verdict}</span></td>
+      </tr>`).join("");
+    counter.textContent = `${rows.length} of ${ROWS.length} objects`;
+  }
+
+  function open(key) {
+    const r = ROWS.find(x => x.key === key);
+    if (!r) return;
+    selected = key;
+    const list = (items) => items.length
+      ? `<div class="list">${items.map(i => esc(i)).join("<br>")}</div>` : "";
+    panel.innerHTML = `
+      <button class="close" type="button" aria-label="Close">&times;</button>
+      <div class="tbl" style="color:var(--faint);font-size:11px">${esc(r.table || "")}</div>
+      <h2>${esc(r.name)}</h2>
+      <div class="verdictbox ${r.verdict}">
+        <strong class="mono" style="font-size:11px;letter-spacing:.8px">${r.verdict}</strong>
+        <span class="mono" style="float:right">${esc(r.bytes_h)}</span>
+        <div class="why">${esc(r.reason)}</div>
+        ${r.action ? `<div class="do">${esc(r.action)}</div>` : ""}
+      </div>
+      ${r.breakdown.length ? `<div class="sec">SIZE BREAKDOWN</div>` +
+        r.breakdown.map(b => `<div class="kv"><span>${esc(b.label)}</span><span>${esc(b.value)}</span></div>`).join("") : ""}
+      <div class="sec">PROPERTIES</div>
+      <div class="kv"><span>Cardinality</span><span>${esc(r.cardinality)}</span></div>
+      <div class="kv"><span>Encoding</span><span>${esc(r.encoding)}</span></div>
+      <div class="kv"><span>Share of model</span><span>${esc(r.pct)}</span></div>
+      ${r.expression ? `<div class="sec">EXPRESSION</div><pre class="dax">${esc(r.expression)}</pre>` : ""}
+      <div class="sec">DEPENDS ON &middot; ${r.upstream.length}</div>
+      ${r.upstream.length ? list(r.upstream)
+        : `<div class="empty"><div class="head">Nothing.</div></div>`}
+      <div class="sec">USED BY &middot; ${r.downstream.length}</div>
+      ${r.downstream.length ? list(r.downstream)
+        : `<div class="empty"><div class="head">Nothing in the model depends on it.</div>
+             <div class="items">${r.checked.map(c => esc(c)).join("<br>")}</div></div>`}
+      <div class="sec">REPORT BINDINGS &middot; ${r.bindings.length}</div>
+      ${r.bindings.length ? `<div class="list">${r.bindings.map(b => b.uri
+          ? `<a class="src" href="${esc(b.uri)}">${esc(b.where)}</a>`
+          : esc(b.where)).join("<br>")}</div>`
+        : `<div class="empty"><div class="head">No binding found in the scanned report.</div></div>`}
+      ${r.defined_in ? `<div class="sec">DEFINED IN</div>
+        <div class="list">${r.defined_uri
+          ? `<a class="src" href="${esc(r.defined_uri)}">${esc(r.defined_in)}</a>`
+          : esc(r.defined_in)}</div>` : ""}
+      ${SERVED ? `
+      <div class="sec">LINEAGE</div>
+      <div class="lineagectl">
+        <button type="button" data-radius="1">1</button>
+        <button type="button" data-radius="2">2</button>
+        <button type="button" data-radius="3">3</button>
+        <span class="gap"></span>
+        <button type="button" data-dir="up">Upstream</button>
+        <button type="button" data-dir="both">Both</button>
+        <button type="button" data-dir="down">Downstream</button>
+      </div>
+      <div id="lineage">drawing&hellip;</div>` : ""}`;
+    panel.classList.add("open");
+    panel.querySelector(".close").onclick = close;
+    if (SERVED) wireLineage(key);
+    draw();
+  }
+
+  function wireLineage(key) {
+    const marks = () => panel.querySelectorAll(".lineagectl button").forEach(b => {
+      const on = (b.dataset.radius && +b.dataset.radius === gRadius) ||
+                 (b.dataset.dir && b.dataset.dir === gDirection);
+      b.classList.toggle("on", !!on);
+    });
+    panel.querySelectorAll(".lineagectl button").forEach(b => b.addEventListener("click", () => {
+      if (b.dataset.radius) gRadius = +b.dataset.radius;
+      if (b.dataset.dir) gDirection = b.dataset.dir;
+      marks();
+      drawLineage(key);
+    }));
+    marks();
+    drawLineage(key);
+  }
+
+  const LEGEND = `<div class="legend">
+    <span><i style="background:#7b8ba3"></i>Column</span>
+    <span><i style="background:#e3a85e"></i>Calculated column</span>
+    <span><i style="background:#79d3bf"></i>Measure</span>
+    <span><i style="background:#9aa1ae"></i>Table</span>
+    <span><i style="background:#a394d4"></i>Relationship</span></div>`;
+
+  function drawLineage(key) {
+    const box = panel.querySelector("#lineage");
+    if (!box) return;
+    const query = `key=${encodeURIComponent(key)}&radius=${gRadius}&direction=${gDirection}`;
+    fetch(`${API}lineage?${query}`)
+      .then(r => r.ok ? r.text() : Promise.reject(r.status))
+      .then(svg => { if (panel.querySelector("#lineage")) box.innerHTML = svg + LEGEND; })
+      .catch(err => { box.innerHTML = `<div class="empty"><div class="head">Could not draw the
+        graph (${esc(err)}).</div></div>`; });
+  }
+
+  function close() { selected = null; panel.classList.remove("open"); draw(); }
+
+  tbody.addEventListener("click", (e) => {
+    const tr = e.target.closest("tr");
+    if (tr) open(tr.dataset.key);
+  });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
+  search.addEventListener("input", draw);
+  chips.forEach(c => c.addEventListener("click", () => {
+    c.setAttribute("aria-pressed", c.getAttribute("aria-pressed") === "true" ? "false" : "true");
+    draw();
+  }));
+  document.querySelectorAll("th[data-sort]").forEach(th => th.addEventListener("click", () => {
+    const key = th.dataset.sort;
+    sortDir = key === sortKey ? -sortDir : (th.dataset.type === "num" ? -1 : 1);
+    sortKey = key;
+    document.querySelectorAll("th").forEach(h => h.removeAttribute("aria-sort"));
+    th.setAttribute("aria-sort", sortDir === 1 ? "ascending" : "descending");
+    draw();
+  }));
+
+  const rescan = document.getElementById("rescan");
+  if (rescan) rescan.addEventListener("click", () => {
+    rescan.dataset.busy = "1";
+    rescan.textContent = "Reading…";
+    fetch(`${API}rescan`, { method: "POST" })
+      // Every total in the page changes after a rescan, so swapping fragments would
+      // leave a stale header above fresh rows. Reload instead.
+      .then(r => r.ok ? location.reload() : Promise.reject(r.status))
+      .catch(err => {
+        rescan.dataset.busy = "";
+        rescan.textContent = "Rescan failed";
+        const state = document.getElementById("loadstate");
+        if (state) state.textContent = `could not re-read the source (${esc(err)})`;
+      });
+  });
+
+  draw();
+})();
+</script>
+</body>
+</html>

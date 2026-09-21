@@ -1,0 +1,13 @@
+{
+  "name": "Overview",
+  "displayName": "Overview",
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "pageFilter1",
+        "field": { "Column": { "Expression": { "SourceRef": { "Entity": "Product" } }, "Property": "List Price" } },
+        "type": "Categorical"
+      }
+    ]
+  }
+}

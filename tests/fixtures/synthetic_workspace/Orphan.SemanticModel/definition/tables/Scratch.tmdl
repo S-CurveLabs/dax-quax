@@ -1,0 +1,10 @@
+table Scratch
+
+	column 'Note'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Note
+
+	partition Scratch = m
+		mode: import
+		source = let x = 1 in x

@@ -1,0 +1,10 @@
+table LocalDateTable_8f3c1e2a-0000-4000-9000-1234567890ab
+	isHidden
+	showAsVariationsOnly
+	lineageTag: 6a1b0f0e-0000-4000-9000-000000000030
+
+	partition LocalDateTable_8f3c1e2a-0000-4000-9000-1234567890ab = calculated
+		mode: import
+		source = Calendar ( DATE ( 2020, 1, 1 ), DATE ( 2025, 12, 31 ) )
+
+	annotation __PBI_LocalDateTable = true

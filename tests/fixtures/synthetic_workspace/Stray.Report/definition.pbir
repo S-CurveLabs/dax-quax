@@ -1,0 +1,9 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definitionProperties/2.0.0/schema.json",
+  "version": "4.0",
+  "datasetReference": {
+    "byConnection": {
+      "connectionString": "Data Source=\"powerbi://api.powerbi.com/v1.0/myorg/Warehouse Ops\";initial catalog=Warehouse Finance;access mode=readonly;integrated security=ClaimsToken;semanticmodelid=8c1d77ae-4b20-4f0e-9a6c-1e5d3b77c902"
+    }
+  }
+}

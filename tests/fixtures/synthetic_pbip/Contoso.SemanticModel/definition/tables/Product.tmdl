@@ -1,0 +1,40 @@
+table Product
+
+	column 'Product Key'
+		dataType: int64
+		isHidden
+		lineageTag: 6a1b0f0e-0000-4000-9000-000000000020
+		summarizeBy: none
+		sourceColumn: Product Key
+
+	column 'Product Name'
+		dataType: string
+		lineageTag: 6a1b0f0e-0000-4000-9000-000000000021
+		summarizeBy: none
+		sourceColumn: Product Name
+		sortByColumn: 'Sort Order'
+		displayFolder: Attributes
+
+	column 'Sort Order'
+		dataType: int64
+		isHidden
+		lineageTag: 6a1b0f0e-0000-4000-9000-000000000022
+		summarizeBy: none
+		sourceColumn: Sort Order
+
+	column 'List Price'
+		dataType: decimal
+		formatString: \$#,0.00
+		lineageTag: 6a1b0f0e-0000-4000-9000-000000000023
+		summarizeBy: sum
+		sourceColumn: List Price
+
+	partition Product = m
+		mode: import
+		source =
+				let
+					Source = Sql.Database("server", "db")
+				in
+					Source
+
+	annotation PBI_ResultType = Table

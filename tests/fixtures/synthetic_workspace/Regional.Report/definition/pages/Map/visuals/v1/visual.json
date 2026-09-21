@@ -1,0 +1,26 @@
+{
+  "name": "v1",
+  "visual": {
+    "visualType": "map",
+    "query": {
+      "queryState": {
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Region"
+                    }
+                  },
+                  "Property": "Region Name"
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

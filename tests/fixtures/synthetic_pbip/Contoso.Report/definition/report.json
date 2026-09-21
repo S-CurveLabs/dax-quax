@@ -1,0 +1,11 @@
+{
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "reportFilter1",
+        "field": { "Column": { "Expression": { "SourceRef": { "Source": "p" } }, "Property": "Colour" } },
+        "type": "Categorical"
+      }
+    ]
+  }
+}
