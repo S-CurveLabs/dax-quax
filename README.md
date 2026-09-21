@@ -24,10 +24,8 @@ scope: 3 reports scanned
 
 ## Install
 
-Not on PyPI yet, so install from the repo:
-
 ```bash
-pip install "dax-quax[file,report] @ git+https://github.com/S-CurveLabs/dax-quax.git"
+pip install "dax-quax[file,report]"
 ```
 
 Reading a `.pbip` project folder or a `.pbix` file needs nothing else — no Power BI Desktop,
@@ -35,7 +33,7 @@ no .NET, and it works on Linux and macOS. To scan a *running* Power BI Desktop y
 the Microsoft client assemblies, which cannot ship in the wheel:
 
 ```bash
-pip install "dax-quax[live] @ git+https://github.com/S-CurveLabs/dax-quax.git"
+pip install "dax-quax[live]"
 dax-quax install-runtime
 ```
 
